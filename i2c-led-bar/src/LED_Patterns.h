@@ -35,7 +35,7 @@ typedef enum {
 
 // Function Prototypes
 void setupTimer(void);
-void updateTimerPeriod(float new_period);
+void updateTimerPeriod(void);
 void increaseTimerPeriod(void);
 void decreaseTimerPeriod(void);
 void array_init(void);

@@ -3,7 +3,10 @@
 
 
 // Timing Variables
-static float base_period = 1.0;         // Default to 1 second
+//static float base_period = 1.0;         // Default to 1 second
+static uint16_t base_period_units = 4;  // 4 units = 1.00 sec, unit = 0.25s
+static uint8_t pattern_scale_divisor = 1;     // 1 = full period, 2 = half period
+
 static unsigned int pattern_step1 = 0;
 static unsigned int pattern_step2 = 0;
 static unsigned int pattern_step3 = 0;
@@ -67,24 +70,31 @@ void setupTimer(void) {
     __enable_interrupt();
 }
 
-void updateTimerPeriod(float new_period) {
+void updateTimerPeriod(void) {
+    uint16_t scaled_units = base_period_units / pattern_scale_divisor;
     TB0CTL |= TBCLR;  // Stop and clear the timer
-    base_period = new_period;
-    TB0CCR0 = (unsigned int)(base_period * 18858);  // Scale timer
+
+    // Each unit is 0.25 seconds
+    // 0.25s = 4714 ticks with current timer setup
+    TB0CCR0 = 4714 * scaled_units;
     TB0CTL |= MC__UP;  // Resume in Up mode
 }
 
 void increaseTimerPeriod(void) {
-    if (base_period < 1) {
-        updateTimerPeriod(base_period + 0.25);
+    if (base_period_units < 4) {
+        base_period_units += 1;
+        updateTimerPeriod();
     }
 }
 
 void decreaseTimerPeriod(void) {
-    if (base_period > 0.25) {
-        updateTimerPeriod(base_period - 0.25);
+    if (base_period_units > 1) {
+        base_period_units -= 1;
+        updateTimerPeriod();
     }
 }
+
+
 
 
 // Initialize LED GPIOs
@@ -122,17 +132,18 @@ void selectPattern(led_pattern_t pattern) {
     // Update timer period based on pattern's spec
     switch (pattern) {
         case Pattern_1_Toggle:
-            updateTimerPeriod(base_period * 1.0);  // Toggle every 1 sec
+            pattern_scale_divisor = 1;  // Full base period
             break;
         case Pattern_2_Up:
         case Pattern_3_In_Out:
-            updateTimerPeriod(base_period * 0.5);  // Step every 0.5 sec
+            pattern_scale_divisor = 2;  // Half base period
             break;
         default:
-            updateTimerPeriod(base_period);  // Default
+            pattern_scale_divisor = 1;
             break;
     }
 
+    updateTimerPeriod();  // Recalculate based on scale
     pattern_active = true;
 }
 
