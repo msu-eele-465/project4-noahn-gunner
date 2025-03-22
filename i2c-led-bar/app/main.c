@@ -1,11 +1,16 @@
+#include "msp430fr2310.h"
 #include "src/LED_Patterns.h"
-#include <msp430.h>
+
 
 // Timing Variables
 static float base_period = 1.0;         // Default to 1 second
 static unsigned int pattern_step1 = 0;
 static unsigned int pattern_step2 = 0;
 static unsigned int pattern_step3 = 0;
+volatile uint8_t i2c_idle_counter = 0;
+#define I2C_IDLE_TIMEOUT 5  // 2 seconds
+
+
 //static unsigned int count = 0;
 static led_pattern_t current_pattern = Pattern_Off;
 static bool pattern_active = false;
@@ -24,7 +29,6 @@ static const unsigned char Pattern_1_P2[2] = {
     (LED1 | LED3),         // Step 0: 1 0 1 0 1 0 1 0 (Same as Pattern 0)
     (LED2)                 // Step 1: 0 1 0 1 0 1 0 1 (Inverted)
 };
-
 
 static const unsigned char Pattern_3_P1[6] = {  
     (LED4 | LED5),      // Step 0: 0 0 0 1 1 0 0 0
@@ -65,17 +69,29 @@ void setupTimer(void) {
 
 void updateTimerPeriod(float new_period) {
     TB0CTL |= TBCLR;  // Stop and clear the timer
-    TB0CCR0 = (unsigned int)(new_period * 18858);  // Scale timer
+    base_period = new_period;
+    TB0CCR0 = (unsigned int)(base_period * 18858);  // Scale timer
     TB0CTL |= MC__UP;  // Resume in Up mode
 }
 
+void increaseTimerPeriod(void) {
+    if (base_period < 1) {
+        updateTimerPeriod(base_period + 0.25);
+    }
+}
+
+void decreaseTimerPeriod(void) {
+    if (base_period > 0.25) {
+        updateTimerPeriod(base_period - 0.25);
+    }
+}
 
 
 // Initialize LED GPIOs
 void array_init(void) {
     PM5CTL0 &= ~LOCKLPM5;
 
-    P1DIR |= (LED4 | LED5 | LED6 | LED7 | LED8);  // Set P1 LEDs as outputs
+    P1DIR |= (BIT0 | LED4 | LED5 | LED6 | LED7 | LED8);  // Set P1 LEDs as outputs
     P2DIR |= (LED1 | LED2 | LED3);                // Set P2 LEDs as outputs
 
     // Set P2.6 & P2.7 to GPIO mode
@@ -126,12 +142,13 @@ void updatePattern(void) {
 
     switch (current_pattern) {
         case Pattern_0_Static:
-            LED_PORT1 = Pattern_0_P1;
+            LED_PORT1 = (LED_PORT1 & ~LED_MASK_P1) | (Pattern_0_P1 & LED_MASK_P1);
             LED_PORT2 = Pattern_0_P2;
             break;
         
         case Pattern_1_Toggle:
-            LED_PORT1 = Pattern_1_P1[pattern_step1];
+            //LED_PORT1 = Pattern_1_P1[pattern_step1];
+            LED_PORT1 = (LED_PORT1 & ~LED_MASK_P1) | (Pattern_1_P1[pattern_step1] & LED_MASK_P1);
             LED_PORT2 = Pattern_1_P2[pattern_step1];
             pattern_step1 = (pattern_step1 + 1) % 2;  // Toggle between 2 states
             break;
@@ -149,30 +166,57 @@ void updatePattern(void) {
             if (count & (1 << 2)) LED_PORT2 |= LED3;
 
             // Map bits to Port 1
-            LED_PORT1 = 0;
-            if (count & (1 << 3)) LED_PORT1 |= LED4;
-            if (count & (1 << 4)) LED_PORT1 |= LED5;
-            if (count & (1 << 5)) LED_PORT1 |= LED6;
-            if (count & (1 << 6)) LED_PORT1 |= LED7;
-            if (count & (1 << 7)) LED_PORT1 |= LED8;
+            uint8_t new_leds = 0;
+            if (count & (1 << 3)) new_leds |= LED4;
+            if (count & (1 << 4)) new_leds |= LED5;
+            if (count & (1 << 5)) new_leds |= LED6;
+            if (count & (1 << 6)) new_leds |= LED7;
+            if (count & (1 << 7)) new_leds |= LED8;
 
+            LED_PORT1 = (LED_PORT1 & ~LED_MASK_P1) | (new_leds & LED_MASK_P1);
 
             pattern_step2 = (pattern_step2 + 1) & 0xFF;  // Wrap after 255
             break;
         }
 
         case Pattern_3_In_Out:
-            LED_PORT1 = Pattern_3_P1[pattern_step3];
+            LED_PORT1 = (LED_PORT1 & ~LED_MASK_P1) | (Pattern_3_P1[pattern_step3] & LED_MASK_P1);
             LED_PORT2 = Pattern_3_P2[pattern_step3];
             pattern_step3 = (pattern_step3 + 1) % 6;  // Cycle through 6 steps
             break;
 
         default:
-            LED_PORT1 = 0x00;
+            LED_PORT1 &= ~LED_MASK_P1;
             LED_PORT2 = 0x00;
             break;    
     }
 }
+
+void i2c_init_slave(void) {
+    // Set P1.2 (SDA) and P1.3 (SCL) for I2C functionality
+    P1SEL0 |= BIT2 | BIT3;
+    P1SEL1 &= ~(BIT2 | BIT3);
+
+    P1REN |= BIT2 | BIT3;  // Enable resistor on P1.2 (SDA) and P1.3 (SCL)
+    P1OUT |= BIT2 | BIT3;  // Set as pull-up
+
+
+    // Put eUSCI_B0 into reset
+    UCB0CTLW0 = UCSWRST;
+
+    // I2C mode, synchronous
+    UCB0CTLW0 |= UCMODE_3 | UCSYNC;
+
+    // 7-bit slave address
+    UCB0I2COA0 = SLAVE_ADDR | UCOAEN;
+
+    // Clear reset to start operation
+    UCB0CTLW0 &= ~UCSWRST;
+
+    // Enable I2C interrupts
+    UCB0IE |= UCRXIE0 | UCSTPIE | UCNACKIE;
+}
+
 
 
 
@@ -181,8 +225,10 @@ int main(void) {
     PM5CTL0 &= ~LOCKLPM5;
     array_init();              // Initialize LEDs and timer
     setupTimer();              // Start Timer_B0 for LED patterns
+    i2c_init_slave();
+
     __enable_interrupt();
-    selectPattern(Pattern_1_Toggle);  // Start with a default pattern
+    //selectPattern(Pattern_1_Toggle);  // Start with a default pattern
 
     while (1) {
         if (update_flag) {
@@ -199,7 +245,55 @@ int main(void) {
 #pragma vector = TIMER0_B0_VECTOR
 __interrupt void Timer0_B0_ISR(void) {
     update_flag = true;
-    //P1OUT ^= BIT1;  // Toggle LED P1.1
+    
+    if (i2c_idle_counter < 255)
+        i2c_idle_counter++;
+
+    if (i2c_idle_counter >= I2C_IDLE_TIMEOUT) {
+        P1OUT &= ~BIT0; // Turn off LED if timeout reached
+    }
     TB0CCTL0 &= ~CCIFG;  
 }
 
+// I2C
+#pragma vector = USCI_B0_VECTOR
+__interrupt void USCI_B0_ISR(void) {
+    switch (__even_in_range(UCB0IV, USCI_I2C_UCBIT9IFG)) {
+        case USCI_I2C_UCRXIFG0: {
+            uint8_t received = UCB0RXBUF;
+
+            // Reset inactivity timer + turn on status LED
+            i2c_idle_counter = 0;
+            P1OUT |= BIT0;
+
+            // Use recieved byte to select pattern
+            if (received <= Pattern_3_In_Out) {
+                selectPattern((led_pattern_t)received);
+            }
+            // Handle speed control
+            else if (received == 'A') {
+                decreaseTimerPeriod();
+            }
+            else if (received == 'B') {
+                increaseTimerPeriod();
+            }
+
+            break;
+        }
+        
+        case USCI_I2C_UCSTPIFG: {
+            // Stop condition recieved
+            UCB0IFG &= ~UCSTPIFG;
+            break;
+        }
+
+        case USCI_I2C_UCNACKIFG: {
+            // NACK handling (just in case)
+            UCB0CTLW0 |= UCTXNACK;
+            break;
+        }
+
+        default:
+            break;
+    }
+}
