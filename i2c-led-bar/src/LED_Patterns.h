@@ -9,11 +9,11 @@
 #define LED1  BIT0  // P2.0
 #define LED2  BIT6  // P2.6
 #define LED3  BIT7  // P2.7
-#define LED4  BIT1  // P1.1
-#define LED5  BIT4  // P1.4
-#define LED6  BIT5  // P1.5
-#define LED7  BIT6  // P1.6
-#define LED8  BIT7  // P1.7
+#define LED4  BIT7  // P1.7 (was LED8)
+#define LED5  BIT6  // P1.6 (was LED7)
+#define LED6  BIT5  // P1.5 (unchanged)
+#define LED7  BIT4  // P1.4 (was LED5)
+#define LED8  BIT1  // P1.1 (was LED4)
 
 // LED Port Definitions
 #define LED_PORT1  P1OUT
