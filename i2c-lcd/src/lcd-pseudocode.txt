@@ -1,8 +1,8 @@
 // lcd pseudocode
 
 void define_ports() {
-    // define the 14 pins to use for the LCD
-    // set all to zero
+    // define the 9 pins to use for the LCD
+    // set all to zero by default
 }
 
 void initialize_lcd() {

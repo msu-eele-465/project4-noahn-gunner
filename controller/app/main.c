@@ -1,4 +1,4 @@
-#include <msp430fr2355.h>
+#include <msp430fr2310.h>
 #include <stdbool.h>
 
 int main(void)
