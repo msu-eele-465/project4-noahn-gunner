@@ -1,0 +1,128 @@
+// lcd pseudocode
+
+void define_ports() {
+    // define the 14 pins to use for the LCD
+    // set all to zero
+}
+
+void initialize_lcd() {
+    // turn on lcd
+    // logic power, screen power (contrast determined by difference between pins 2 and 3)
+    pin2 = on
+    pin3 = off
+
+    // set to 4 bit mode
+    // RS and RW are off
+    pin4 = off
+    pin5 = off
+    // DB7-4 = 0010 to set 4 bit mode
+    drive_bus_pins(0010);
+    pulse_enable();
+    drive_bus_pins(0010);
+    pulse_enable();
+    // display on, 2-line mode (1100)
+    drive_bus_pins(1100b);
+    pulse_enable();
+    busy_delay();
+
+    // display on, cursor on, blink on (00001111)
+    drive_bus_pins(0000b);
+    pulse_enable();
+    drive_bus_pins(1111b);
+    pulse_enable();
+    busy_delay();
+
+    // display clear
+    drive_bus_pins(0000b);
+    pulse_enable();
+    drive_bus_pins(1111b);
+    pulse_enable();
+    busy_delay();
+
+    // entry mode set
+    drive_bus_pins(0000b);
+    pulse_enable();
+    drive_bus_pins(0110b);
+    pulse_enable();
+    busy_delay();
+
+}
+
+void drive_bus_pins(int 4bitint) {
+    // drives DB7-DB4 with supplied 4 bit integer from main controller
+    if 4bitint(3) = 1:
+        pin14 = on
+    else
+        pin14 = off
+    if 4bitint(2) = 1:
+        pin13 = on
+    else
+        pin13 = off
+    if 4bitint(1) = 1:
+        pin12 = on
+    else
+        pin12 = off
+    if 4bitint(0) = 1:
+        pin11 = on
+    else
+        pin11 = off
+}
+
+void pulse_enable() {
+    // pulse enable
+    pin6 = on
+    delay()
+    pin6 = off
+}
+
+void select_tile(int DDRamAddress) {
+    // select tile to write to
+    // RS low, RW low
+    pin4 = off
+    pin5 = off
+    // DB7 = 1, DB6-0 - DDRamAddress
+    drive_bus_pins(1 & DDRamAddress(6-4));
+    pulse_enable();
+    drive_bus_pins(DDRamAddress(3-0));
+    pulse_enable();
+    busy_delay();
+}
+
+void select_character(int CGRomAddress) {
+    // select character to write
+    // RS low, RW low
+    pin4 = off
+    pin5 = off
+    // DB7 = 0, DB6 = 1, DB5-0 - CGRamAddress
+    drive_bus_pins(01 & DDRamAddress(5-4));
+    pulse_enable();
+    drive_bus_pins(DDRamAddress(3-0));
+    pulse_enable();
+    busy_delay();
+}
+
+void delay() {
+    // do short delay loop here
+}
+
+bool busy_check() {
+    // read if busy flag is asserted
+    // RS low, RW high
+    pin4 = off
+    pin5 = on
+    if DB7 high
+        return true
+    else
+        return false
+}
+
+void busy_delay() {
+    halt all function until not busy
+    bool isBusy = true
+    while(isBusy) {
+        if busy_check()
+            isBusy = true
+        else
+            isBusy = false
+    }
+}
