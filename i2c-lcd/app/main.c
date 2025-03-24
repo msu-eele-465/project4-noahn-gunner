@@ -1,5 +1,6 @@
 #include <msp430fr2310.h>
 #include <stdbool.h>
+#include <stdint.h>
 #include "../src/lcd.h"
 
 int main(void)
@@ -14,18 +15,15 @@ int main(void)
 
     while (true)
     {
-        P1OUT ^= BIT0;
-        P1OUT ^= BIT1;
-        P1OUT ^= BIT2;
-        P1OUT ^= BIT3;
-        P1OUT ^= BIT4;
-        P1OUT ^= BIT5;
-        P1OUT ^= BIT6;
-        P1OUT ^= BIT7;
-        
-        P2OUT ^= BIT0;
-        P2OUT ^= BIT6;
-        P2OUT ^= BIT7;
+
+        power_on();
+        power_off();
+        enable_high();
+        enable_low();
+        rs_high();
+        rs_low();
+        rw_high();
+        rw_low();
 
         // Delay for 100000*(1/MCLK)=0.1s
         __delay_cycles(100000);
