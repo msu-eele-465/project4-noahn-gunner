@@ -16,16 +16,12 @@ int main(void)
     while (true)
     {
 
-        power_on();
-        power_off();
-        enable_high();
-        enable_low();
-        rs_high();
-        rs_low();
-        rw_high();
-        rw_low();
+        set_nibble(0b0000);
+        set_nibble(0b1001);
+        set_nibble(0b0110);
+        set_nibble(0b0101);
 
         // Delay for 100000*(1/MCLK)=0.1s
-        __delay_cycles(100000);
+        //__delay_cycles(100000);
     }
 }

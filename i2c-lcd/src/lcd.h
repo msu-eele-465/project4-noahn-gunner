@@ -73,3 +73,33 @@ void rw_high(void) {
 void rw_low(void) {
     P1OUT &= ~BIT6;
 }
+
+void set_nibble(int nibbleInt) {
+    int nib0 = nibbleInt;
+    if ((nib0 &= BIT0) != 0) {
+        P1OUT |= BIT0;
+    } else {
+        P1OUT &= ~BIT0;
+    }
+    
+    int nib1 = nibbleInt;
+    if ((nib1 &= BIT1) != 0) {
+        P1OUT |= BIT1;
+    } else {
+        P1OUT &= ~BIT1;
+    }
+    
+    int nib2 = nibbleInt;
+    if ((nib2 &= BIT2) != 0) {
+        P1OUT |= BIT2;
+    } else {
+        P1OUT &= ~BIT2;
+    }
+    
+    int nib3 = nibbleInt;
+    if ((nib3 &= BIT3) != 0) {
+        P1OUT |= BIT3;
+    } else {
+        P1OUT &= ~BIT3;
+    }
+}
