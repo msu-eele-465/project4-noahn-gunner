@@ -4,6 +4,43 @@
 #include "../src/keypad.h"
 #include "msp430fr2355.h"
 
+#define LED_BAR_ADDR 0x42     // I2C address of LED bar
+#define PATTERN_KEY '1'       // test pattern key (you can expand this later)
+
+void init_I2C_Master(void) {
+    // Set P1.2 (SDA) and P1.3 (SCL) as I2C function
+    P1SEL1 |= BIT2 | BIT3;
+    P1SEL0 &= ~(BIT2 | BIT3);
+
+    // Put eUSCI_B0 into reset
+    UCB0CTLW0 |= UCSWRST;
+
+    // Configure as I2C Master, synchronous mode, use SMCLK
+    UCB0CTLW0 = UCMST | UCMODE_3 | UCSYNC | UCSSEL__SMCLK | UCSWRST;
+
+    // Set bit rate (assuming SMCLK ~1MHz)
+    UCB0BRW = 10;  // 1 MHz / 10 = 100 kHz I2C
+
+    // Set slave address
+    UCB0I2CSA = LED_BAR_ADDR;
+
+    // Release from reset
+    UCB0CTLW0 &= ~UCSWRST;
+}
+
+
+void send_byte_I2C(unsigned char byte) {
+    while (UCB0CTLW0 & UCTXSTP); // Wait for any previous stop to complete
+    UCB0CTLW0 |= UCTR | UCTXSTT; // Set transmitter mode and start condition
+
+    while (!(UCB0IFG & UCTXIFG0)); // Wait for buffer ready
+    UCB0TXBUF = byte;             // Send byte
+
+    while (!(UCB0IFG & UCTXIFG0)); // Wait for ACK
+    UCB0CTLW0 |= UCTXSTP;          // Send stop
+    while (UCB0CTLW0 & UCTXSTP);   // Wait for stop to complete
+}
+
 // for blinking LED on keypress
 volatile int prev_state = 0;
 
@@ -20,6 +57,7 @@ int main(void) {
 
 
     init_keypad_ports();
+    init_I2C_Master();
 
     // Unlock GPIO pins
     PM5CTL0 &= ~LOCKLPM5;
@@ -41,12 +79,16 @@ int main(void) {
         for (i = 0; i < 10000; i++) {}
 
         lock_state();
-        // Turn on LED on P6.6 if unlock code is correctly entered
-        if (locked_state == 2 && password_unlock) {
-            P6OUT |= BIT6;
-        } else {
-            P6OUT &= ~BIT6;
+        if (password_unlock && current_key == PATTERN_KEY && prev_key != PATTERN_KEY) {
+            send_byte_I2C(0x55);   // send dummy command to LED bar
+            P6OUT ^= BIT6;         // toggle status LED to show it sent
         }
+        // // Turn on LED on P6.6 if unlock code is correctly entered
+        // if (locked_state == 2 && password_unlock) {
+        //     P6OUT |= BIT6;
+        // } else {
+        //     P6OUT &= ~BIT6;
+        // }
 
 
         for (i = 0; i < 10000; i++) {}
