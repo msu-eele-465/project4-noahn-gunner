@@ -116,14 +116,20 @@ void start_up() {
     // set to 4 bit mode
     set_nibble(0b0010);
     enable_pulse();
+    __delay_cycles(100000);
     set_nibble(0b0010);
     enable_pulse();
+    __delay_cycles(100000);
+
     // 2 line mode, display on
+    set_nibble(0b1100);
+    enable_pulse();
     __delay_cycles(100000);
 
     // display on, cursor on, blink on
     set_nibble(0b0000);
     enable_pulse();
+    __delay_cycles(100000);
     set_nibble(0b1111);
     enable_pulse();
     __delay_cycles(100000);
@@ -131,6 +137,7 @@ void start_up() {
     // clear display
     set_nibble(0b0000);
     enable_pulse();
+    __delay_cycles(100000);
     set_nibble(0b0001);
     enable_pulse();
     __delay_cycles(100000);
@@ -138,7 +145,32 @@ void start_up() {
     // entry mode set, increment mode, shift on
     set_nibble(0b0000);
     enable_pulse();
+    __delay_cycles(100000);
     set_nibble(0b0111);
     enable_pulse();
     __delay_cycles(100000);
+}
+
+void set_cursor_location(int upperNibble, int lowerNibble) {
+    // expecting full address given to be 1 concatenated with 7 bit address, split into 2 nibbles
+    // e.g. for first char in first line, upperNibble = 1000, lowerNibble = 0000
+    set_nibble(upperNibble);
+    enable_pulse();
+    __delay_cycles(100000);
+    set_nibble(lowerNibble);
+    enable_pulse();
+    __delay_cycles(100000);
+}
+
+void write_character(int upperNibble, int lowerNibble) {
+    // expecting full address split into 2 nibbles
+    // e.g. for 0, upperNibble = 0011, lowerNibble = 0000
+    rs_high();
+    set_nibble(upperNibble);
+    enable_pulse();
+    __delay_cycles(100000);
+    set_nibble(lowerNibble);
+    enable_pulse();
+    __delay_cycles(100000);
+    rs_low();
 }

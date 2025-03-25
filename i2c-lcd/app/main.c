@@ -16,7 +16,7 @@ int main(void)
     while (true)
     {
 
-        start_up();
+        set_cursor_location(0b1000, 0b0000);
 
         // Delay for 100000*(1/MCLK)=0.1s
         //__delay_cycles(100000);
