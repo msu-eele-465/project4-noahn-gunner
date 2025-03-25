@@ -10,8 +10,8 @@ void define_ports(void) {
     P1OUT &= ~BIT3;
 
     // logic circuit power supply (P1.4)
-    P1DIR |= BIT4;
     P1OUT &= ~BIT4;
+    P1DIR |= BIT4;
 
     // RS (P1.5)
     P1DIR |= BIT5;
@@ -142,11 +142,11 @@ void start_up() {
     enable_pulse();
     __delay_cycles(100000);
 
-    // entry mode set, increment mode, shift on
+    // entry mode set, increment mode, shift off
     set_nibble(0b0000);
     enable_pulse();
     __delay_cycles(100000);
-    set_nibble(0b0111);
+    set_nibble(0b0110);
     enable_pulse();
     __delay_cycles(100000);
 }

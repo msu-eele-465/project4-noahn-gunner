@@ -16,7 +16,13 @@ int main(void)
     while (true)
     {
 
-        set_cursor_location(0b1000, 0b0000);
+        start_up();
+        start_up();
+
+        write_character(0b0101, 0b0101);
+        write_character(0b0101, 0b0101);
+        write_character(0b0101, 0b0101);
+        write_character(0b0101, 0b0101);
 
         // Delay for 100000*(1/MCLK)=0.1s
         //__delay_cycles(100000);
