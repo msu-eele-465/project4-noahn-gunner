@@ -58,6 +58,12 @@ void enable_low(void) {
     P1OUT &= ~BIT7;
 }
 
+void enable_pulse() {
+    enable_high();
+    __delay_cycles(50000);
+    enable_low();
+}
+
 void rs_high(void) {
     P1OUT |= BIT5;
 }
@@ -102,4 +108,37 @@ void set_nibble(int nibbleInt) {
     } else {
         P1OUT &= ~BIT3;
     }
+}
+
+void start_up() {
+    power_on();
+    __delay_cycles(100000);
+    // set to 4 bit mode
+    set_nibble(0b0010);
+    enable_pulse();
+    set_nibble(0b0010);
+    enable_pulse();
+    // 2 line mode, display on
+    __delay_cycles(100000);
+
+    // display on, cursor on, blink on
+    set_nibble(0b0000);
+    enable_pulse();
+    set_nibble(0b1111);
+    enable_pulse();
+    __delay_cycles(100000);
+
+    // clear display
+    set_nibble(0b0000);
+    enable_pulse();
+    set_nibble(0b0001);
+    enable_pulse();
+    __delay_cycles(100000);
+
+    // entry mode set, increment mode, shift on
+    set_nibble(0b0000);
+    enable_pulse();
+    set_nibble(0b0111);
+    enable_pulse();
+    __delay_cycles(100000);
 }

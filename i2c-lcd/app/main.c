@@ -16,10 +16,7 @@ int main(void)
     while (true)
     {
 
-        set_nibble(0b0000);
-        set_nibble(0b1001);
-        set_nibble(0b0110);
-        set_nibble(0b0101);
+        start_up();
 
         // Delay for 100000*(1/MCLK)=0.1s
         //__delay_cycles(100000);
