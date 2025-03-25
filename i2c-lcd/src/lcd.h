@@ -151,6 +151,15 @@ void start_up() {
     __delay_cycles(100000);
 }
 
+void clear_display() {
+    set_nibble(0b0000);
+    enable_pulse();
+    __delay_cycles(100000);
+    set_nibble(0b0001);
+    enable_pulse();
+    __delay_cycles(100000);
+}
+
 void set_cursor_location(int upperNibble, int lowerNibble) {
     // expecting full address given to be 1 concatenated with 7 bit address, split into 2 nibbles
     // e.g. for first char in first line, upperNibble = 1000, lowerNibble = 0000
