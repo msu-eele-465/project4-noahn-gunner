@@ -42,28 +42,27 @@ int init_keypad_irqs(void) {
 // cycle through rows turn on/off
 int row_cycle(void) {
     current_row = 1;
-    P4OUT |= BIT4;   // Row 1 = P4.4
+    P4OUT |= BIT4;
     P4OUT &= ~BIT4;
     __delay_cycles(10000);
 
     current_row = 2;
-    P4OUT |= BIT5;   // Row 2 = P4.5
+    P4OUT |= BIT5;
     P4OUT &= ~BIT5;
     __delay_cycles(10000);
 
     current_row = 3;
-    P4OUT |= BIT6;   // Row 3 = P4.6
+    P4OUT |= BIT6;
     P4OUT &= ~BIT6;
     __delay_cycles(10000);
 
     current_row = 4;
-    P4OUT |= BIT7;   // Row 4 = P4.7
+    P4OUT |= BIT7;
     P4OUT &= ~BIT7;
     __delay_cycles(10000);
 
     return 0;
 }
-
 
 // mask columns for easier reading
 int col_masking(void) {
