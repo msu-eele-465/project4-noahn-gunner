@@ -203,3 +203,46 @@ void text_toggle() {
     write_character(0b0110, 0b1100);
     write_character(0b0110, 0b0101);
 }
+
+void text_up_counter() {
+    set_cursor_location(0b1000, 0b0000);
+    write_character(0b0111, 0b0101);
+    write_character(0b0111, 0b0000);
+    write_character(0b0010, 0b0000);
+    write_character(0b0110, 0b0011);
+    write_character(0b0110, 0b1111);
+    write_character(0b0111, 0b0101);
+    write_character(0b0110, 0b1110);
+    write_character(0b0111, 0b0100);
+    write_character(0b0110, 0b0101);
+    write_character(0b0111, 0b0010);
+}
+
+void text_in_and_out() {
+    write_character(0b0110, 0b1001);
+    write_character(0b0110, 0b1110);
+    write_character(0b0010, 0b0000);
+    write_character(0b0110, 0b0001);
+    write_character(0b0110, 0b1110);
+    write_character(0b0110, 0b0100);
+    write_character(0b0010, 0b0000);
+    write_character(0b0110, 0b1111);
+    write_character(0b0111, 0b0101);
+    write_character(0b0111, 0b0100);
+}
+
+void text_down_counter() {
+    set_cursor_location(0b1000, 0b0000);
+    write_character(0b0110, 0b0100);
+    write_character(0b0110, 0b1111);
+    write_character(0b0111, 0b0111);
+    write_character(0b0110, 0b1110);
+    write_character(0b0010, 0b0000);
+    write_character(0b0110, 0b0011);
+    write_character(0b0110, 0b1111);
+    write_character(0b0111, 0b0101);
+    write_character(0b0110, 0b1110);
+    write_character(0b0111, 0b0100);
+    write_character(0b0110, 0b0101);
+    write_character(0b0111, 0b0010);
+}
