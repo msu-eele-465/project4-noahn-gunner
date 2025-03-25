@@ -183,3 +183,23 @@ void write_character(int upperNibble, int lowerNibble) {
     __delay_cycles(100000);
     rs_low();
 }
+
+void text_static() {
+    set_cursor_location(0b1000, 0b0000);
+    write_character(0b0111, 0b0011);
+    write_character(0b0111, 0b0100);
+    write_character(0b0110, 0b0001);
+    write_character(0b0111, 0b0100);
+    write_character(0b0110, 0b1001);
+    write_character(0b0110, 0b0011);
+}
+
+void text_toggle() {
+    set_cursor_location(0b1000, 0b0000);
+    write_character(0b0111, 0b0100);
+    write_character(0b0110, 0b1111);
+    write_character(0b0110, 0b0111);
+    write_character(0b0110, 0b0111);
+    write_character(0b0110, 0b1100);
+    write_character(0b0110, 0b0101);
+}

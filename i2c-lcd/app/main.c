@@ -19,10 +19,10 @@ int main(void)
         start_up();
         start_up();
 
-        write_character(0b0101, 0b0101);
-        write_character(0b0101, 0b0101);
-        write_character(0b0101, 0b0101);
-        write_character(0b0101, 0b0101);
+        text_static();
+        clear_display();
+        text_toggle();
+        clear_display();
 
         // Delay for 100000*(1/MCLK)=0.1s
         //__delay_cycles(100000);
