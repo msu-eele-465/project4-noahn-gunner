@@ -1,3 +1,8 @@
+#include <stdbool.h>
+
+bool cursor_on = true;
+bool cursor_blink = true;
+
 void define_ports(void) {
     // data nibble DB7-BD4 (P1.0-1.3)
     P1DIR |= BIT0;
@@ -10,6 +15,7 @@ void define_ports(void) {
     P1OUT &= ~BIT3;
 
     // logic circuit power supply (P1.4)
+    // this does nothing bc I'm not powering from GPIO pin anymore lol
     P1OUT &= ~BIT4;
     P1DIR |= BIT4;
 
@@ -154,10 +160,10 @@ void start_up() {
 void clear_display() {
     set_nibble(0b0000);
     enable_pulse();
-    __delay_cycles(100000);
+    __delay_cycles(5000);
     set_nibble(0b0001);
     enable_pulse();
-    __delay_cycles(100000);
+    __delay_cycles(5000);
 }
 
 void set_cursor_location(int upperNibble, int lowerNibble) {
@@ -165,10 +171,10 @@ void set_cursor_location(int upperNibble, int lowerNibble) {
     // e.g. for first char in first line, upperNibble = 1000, lowerNibble = 0000
     set_nibble(upperNibble);
     enable_pulse();
-    __delay_cycles(100000);
+    __delay_cycles(5000);
     set_nibble(lowerNibble);
     enable_pulse();
-    __delay_cycles(100000);
+    __delay_cycles(5000);
 }
 
 void write_character(int upperNibble, int lowerNibble) {
@@ -177,72 +183,215 @@ void write_character(int upperNibble, int lowerNibble) {
     rs_high();
     set_nibble(upperNibble);
     enable_pulse();
-    __delay_cycles(100000);
+    __delay_cycles(5000);
     set_nibble(lowerNibble);
     enable_pulse();
-    __delay_cycles(100000);
+    __delay_cycles(5000);
     rs_low();
 }
 
+void update_cursor_status() {
+    const int upper = 0b0000;
+    int lower = 0b1100;
+    if (cursor_on) {
+        if (cursor_blink) {
+            lower = 0b1111;
+        } else {
+            lower = 0b1110;
+        }
+    } else {
+            lower = 0b1100;
+    }
+    set_nibble(upper);
+    enable_pulse();
+    __delay_cycles(5000);
+    set_nibble(lower);
+    enable_pulse();
+    __delay_cycles(5000);
+}
+
+void write_by_ascii(char ch) {
+    int ascii_ch = ch;
+    int ascii_ch_upper = ch >> 4;
+    write_character(ascii_ch_upper, ascii_ch);
+}
+
+void location_by_coords(int row, int column) {
+    int upper = 0b1000;
+    int lower = column - 1;
+    if (row == 1) {
+        upper = 0b1000;
+    } else if (row == 2) {
+        upper = 0b1100;
+    } else {
+        upper = 0b1000;
+    }
+    set_cursor_location(upper, lower);
+} 
+
 void text_static() {
-    set_cursor_location(0b1000, 0b0000);
-    write_character(0b0111, 0b0011);
-    write_character(0b0111, 0b0100);
-    write_character(0b0110, 0b0001);
-    write_character(0b0111, 0b0100);
-    write_character(0b0110, 0b1001);
-    write_character(0b0110, 0b0011);
+    location_by_coords(1, 1);
+    write_by_ascii('s');
+    write_by_ascii('t');
+    write_by_ascii('a');
+    write_by_ascii('t');
+    write_by_ascii('i');
+    write_by_ascii('c');
+    write_by_ascii(' ');
+    write_by_ascii(' ');
+    write_by_ascii(' ');
+    write_by_ascii(' ');
+    write_by_ascii(' ');
+    write_by_ascii(' ');
+    write_by_ascii(' ');
+    write_by_ascii(' ');
+    write_by_ascii(' ');
+    write_by_ascii(' ');
 }
 
 void text_toggle() {
-    set_cursor_location(0b1000, 0b0000);
-    write_character(0b0111, 0b0100);
-    write_character(0b0110, 0b1111);
-    write_character(0b0110, 0b0111);
-    write_character(0b0110, 0b0111);
-    write_character(0b0110, 0b1100);
-    write_character(0b0110, 0b0101);
+    location_by_coords(1, 1);
+    write_by_ascii('t');
+    write_by_ascii('o');
+    write_by_ascii('g');
+    write_by_ascii('g');
+    write_by_ascii('l');
+    write_by_ascii('e');
+    write_by_ascii(' ');
+    write_by_ascii(' ');
+    write_by_ascii(' ');
+    write_by_ascii(' ');
+    write_by_ascii(' ');
+    write_by_ascii(' ');
+    write_by_ascii(' ');
+    write_by_ascii(' ');
+    write_by_ascii(' ');
+    write_by_ascii(' ');
 }
 
 void text_up_counter() {
-    set_cursor_location(0b1000, 0b0000);
-    write_character(0b0111, 0b0101);
-    write_character(0b0111, 0b0000);
-    write_character(0b0010, 0b0000);
-    write_character(0b0110, 0b0011);
-    write_character(0b0110, 0b1111);
-    write_character(0b0111, 0b0101);
-    write_character(0b0110, 0b1110);
-    write_character(0b0111, 0b0100);
-    write_character(0b0110, 0b0101);
-    write_character(0b0111, 0b0010);
+    location_by_coords(1, 1);
+    write_by_ascii('u');
+    write_by_ascii('p');
+    write_by_ascii(' ');
+    write_by_ascii('c');
+    write_by_ascii('o');
+    write_by_ascii('u');
+    write_by_ascii('n');
+    write_by_ascii('t');
+    write_by_ascii('e');
+    write_by_ascii('r');
+    write_by_ascii(' ');
+    write_by_ascii(' ');
+    write_by_ascii(' ');
+    write_by_ascii(' ');
+    write_by_ascii(' ');
+    write_by_ascii(' ');
 }
 
 void text_in_and_out() {
-    write_character(0b0110, 0b1001);
-    write_character(0b0110, 0b1110);
-    write_character(0b0010, 0b0000);
-    write_character(0b0110, 0b0001);
-    write_character(0b0110, 0b1110);
-    write_character(0b0110, 0b0100);
-    write_character(0b0010, 0b0000);
-    write_character(0b0110, 0b1111);
-    write_character(0b0111, 0b0101);
-    write_character(0b0111, 0b0100);
+    location_by_coords(1, 1);
+    write_by_ascii('i');
+    write_by_ascii('n');
+    write_by_ascii(' ');
+    write_by_ascii('a');
+    write_by_ascii('n');
+    write_by_ascii('d');
+    write_by_ascii(' ');
+    write_by_ascii('o');
+    write_by_ascii('u');
+    write_by_ascii('t');
+    write_by_ascii(' ');
+    write_by_ascii(' ');
+    write_by_ascii(' ');
+    write_by_ascii(' ');
+    write_by_ascii(' ');
+    write_by_ascii(' ');
 }
 
 void text_down_counter() {
-    set_cursor_location(0b1000, 0b0000);
-    write_character(0b0110, 0b0100);
-    write_character(0b0110, 0b1111);
-    write_character(0b0111, 0b0111);
-    write_character(0b0110, 0b1110);
-    write_character(0b0010, 0b0000);
-    write_character(0b0110, 0b0011);
-    write_character(0b0110, 0b1111);
-    write_character(0b0111, 0b0101);
-    write_character(0b0110, 0b1110);
-    write_character(0b0111, 0b0100);
-    write_character(0b0110, 0b0101);
-    write_character(0b0111, 0b0010);
+    location_by_coords(1, 1);
+    write_by_ascii('d');
+    write_by_ascii('o');
+    write_by_ascii('w');
+    write_by_ascii('n');
+    write_by_ascii(' ');
+    write_by_ascii('c');
+    write_by_ascii('o');
+    write_by_ascii('u');
+    write_by_ascii('n');
+    write_by_ascii('t');
+    write_by_ascii('e');
+    write_by_ascii('r');
+    write_by_ascii(' ');
+    write_by_ascii(' ');
+    write_by_ascii(' ');
+    write_by_ascii(' ');
 }
+
+void text_rotate_1_left() {
+    location_by_coords(1, 1);
+    write_by_ascii('r');
+    write_by_ascii('o');
+    write_by_ascii('t');
+    write_by_ascii('a');
+    write_by_ascii('t');
+    write_by_ascii('e');
+    write_by_ascii(' ');
+    write_by_ascii('1');
+    write_by_ascii(' ');
+    write_by_ascii('l');
+    write_by_ascii('e');
+    write_by_ascii('f');
+    write_by_ascii('t');
+    write_by_ascii(' ');
+    write_by_ascii(' ');
+    write_by_ascii(' ');
+}
+
+void text_rotate_7_right() {
+    location_by_coords(1, 1);
+    write_by_ascii('r');
+    write_by_ascii('o');
+    write_by_ascii('t');
+    write_by_ascii('a');
+    write_by_ascii('t');
+    write_by_ascii('e');
+    write_by_ascii(' ');
+    write_by_ascii('7');
+    write_by_ascii(' ');
+    write_by_ascii('r');
+    write_by_ascii('i');
+    write_by_ascii('g');
+    write_by_ascii('h');
+    write_by_ascii('t');
+    write_by_ascii(' ');
+    write_by_ascii(' ');
+}
+
+void text_fill_left() {
+    location_by_coords(1, 1);
+    write_by_ascii('f');
+    write_by_ascii('i');
+    write_by_ascii('l');
+    write_by_ascii('l');
+    write_by_ascii(' ');
+    write_by_ascii('l');
+    write_by_ascii('e');
+    write_by_ascii('f');
+    write_by_ascii('t');
+    write_by_ascii(' ');
+    write_by_ascii(' ');
+    write_by_ascii(' ');
+    write_by_ascii(' ');
+    write_by_ascii(' ');
+    write_by_ascii(' ');
+    write_by_ascii(' ');
+}
+
+void pressed_char(char ch) {
+    int ascii_ch = ch;
+    location_by_coords(2, 16);
+    write_by_ascii(ascii_ch);
+}
+
