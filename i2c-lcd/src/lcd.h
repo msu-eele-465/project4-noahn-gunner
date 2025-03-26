@@ -242,3 +242,23 @@ void write_word(char *word) {
         write_by_ascii(word[i]);
     }
 }
+
+void char_test() {
+    clear_display();
+    location_by_coords(1, 1);
+    int upper;
+    int lower;
+    int current_col = 0;
+    for (upper = 0; upper < 32; upper++) {
+        for (lower = 0; lower < 32; lower++) {
+            if (current_col != 16) {
+                write_character(upper, lower);
+                current_col++;
+            } else {
+                location_by_coords(1, 1);
+                write_character(upper, lower);
+                current_col = 1;
+            }
+        }
+    }
+}

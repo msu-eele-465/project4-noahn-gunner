@@ -50,6 +50,8 @@ int main(void)
         write_word("fill left        ");
         pressed_char('D');
 
+        char_test();
+
         // Delay for 100000*(1/MCLK)=0.1s
         //__delay_cycles(100000);
     }
