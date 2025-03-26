@@ -21,32 +21,33 @@ int main(void)
         cursor_on = true;
         cursor_blink = false;
         update_cursor_status();
-
-        text_static();
+        write_word("static          ");
         pressed_char('A');
-        text_toggle();
+        write_word("toggle          ");
         pressed_char('B');
-        text_up_counter();
+        write_word("up counter      ");
         pressed_char('9');
-        text_in_and_out();
+        write_word("in and out      ");
         pressed_char('*');
         
         cursor_on = true;
         cursor_blink = true;
         update_cursor_status();
 
-        text_down_counter();
+        clear_display();
+
+        write_word("down counter    ");
         pressed_char('#');
-        text_rotate_1_left();
+        write_word("rotate 1 left   ");
         pressed_char('7');
 
         cursor_on = false;
         cursor_blink = false;
         update_cursor_status();
 
-        text_rotate_7_right();
+        write_word("rotate 7 right   ");
         pressed_char('3');
-        text_fill_left();
+        write_word("fill left        ");
         pressed_char('D');
 
         // Delay for 100000*(1/MCLK)=0.1s
