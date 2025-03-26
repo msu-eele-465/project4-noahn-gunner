@@ -3,6 +3,9 @@
 bool cursor_on = true;
 bool cursor_blink = true;
 
+int current_pattern = 0;
+int last_key = 'N'; 
+
 void define_ports(void) {
     // data nibble DB7-BD4 (P1.0-1.3)
     P1DIR |= BIT0;
