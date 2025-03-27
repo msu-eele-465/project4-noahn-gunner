@@ -22,5 +22,7 @@ int row_cycle(void);
 int col_masking(void);
 int lock_state(void);
 int button_logic(void);
+void sendCommandByte(char byte);
+
 
 #endif

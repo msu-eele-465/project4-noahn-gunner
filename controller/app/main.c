@@ -51,6 +51,18 @@ void send_I2C_packet() {
     UCB0IFG &= ~UCSTPIFG;
 }
 
+void sendCommandByte(char byte) {
+    packet[0] = byte;
+    UCB0TBCNT = sizeof(packet);      // Set packet length again
+    UCB0IFG &= ~UCTXIFG0;            // Clear TX flag
+    UCB0TXBUF = packet[0];           // Load byte
+    UCB0CTLW0 |= UCTXSTT;            // Send START
+    while (UCB0CTLW0 & UCTXSTT);     // Wait for START to clear
+    while (!(UCB0IFG & UCSTPIFG));   // Wait for STOP
+    UCB0IFG &= ~UCSTPIFG;
+}
+
+
 int main(void)
 {
 	WDTCTL = WDTPW | WDTHOLD;	            // stop watchdog timer
