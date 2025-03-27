@@ -3,19 +3,16 @@
 bool cursor_on = true;
 bool cursor_blink = true;
 
-int current_pattern = 0;
-int last_key = 'N'; 
-
 void define_ports(void) {
     // data nibble DB7-BD4 (P1.0-1.3)
     P1DIR |= BIT0;
     P1OUT &= ~BIT0;
     P1DIR |= BIT1;
     P1OUT &= ~BIT1;
-    P1DIR |= BIT2;
-    P1OUT &= ~BIT2;
-    P1DIR |= BIT3;
-    P1OUT &= ~BIT3;
+    P2DIR |= BIT6;
+    P2OUT &= ~BIT6;
+    P2DIR |= BIT7;
+    P2OUT &= ~BIT7;
 
     // logic circuit power supply (P1.4)
     // this does nothing bc I'm not powering from GPIO pin anymore lol
@@ -37,14 +34,6 @@ void define_ports(void) {
     // Contrast (P2.0)
     P2DIR |= BIT0;
     P2OUT &= ~BIT0;
-
-    // i2c pins
-    // SDA (P2.6)
-    P2DIR |= BIT6;
-    P2OUT &= ~BIT6;
-    // SCL (P2.7)
-    P2DIR |= BIT7;
-    P2OUT &= ~BIT7;
 }
 
 // turns power on
@@ -106,16 +95,16 @@ void set_nibble(int nibbleInt) {
     
     int nib2 = nibbleInt;
     if ((nib2 &= BIT2) != 0) {
-        P1OUT |= BIT2;
+        P2OUT |= BIT6;
     } else {
-        P1OUT &= ~BIT2;
+        P2OUT &= ~BIT6;
     }
     
     int nib3 = nibbleInt;
     if ((nib3 &= BIT3) != 0) {
-        P1OUT |= BIT3;
+        P2OUT |= BIT7;
     } else {
-        P1OUT &= ~BIT3;
+        P2OUT &= ~BIT7;
     }
 }
 
@@ -247,7 +236,6 @@ void write_word(char *word) {
 }
 
 void char_test() {
-    clear_display();
     location_by_coords(1, 1);
     int upper;
     int lower;
@@ -264,4 +252,74 @@ void char_test() {
             }
         }
     }
+}
+
+void key_input(int key_pressed) {
+    switch (key_pressed) {
+                case '1':
+                    pressed_char('1');
+                    write_word("toggle        ");
+                    break;
+                case '2':
+                    pressed_char('2');
+                    write_word("up counter    ");
+                    break;
+                case '3':
+                    pressed_char('3');
+                    write_word("in and out    ");
+                    break;
+                case '4':
+                    pressed_char('4');
+                    write_word("down counter  ");
+                    break;
+                case '5':
+                    pressed_char('5');
+                    write_word("rotate 1 left ");
+                    break;
+                case '6':
+                    pressed_char('6');
+                    write_word("rotate 7 right");
+                    break;
+                case '7':
+                    pressed_char('7');
+                    write_word("fill left     ");
+                    break;
+                case '8':
+                    pressed_char('8');
+                    write_word("              ");
+                    break;
+                case '9':
+                    pressed_char('9');
+                    cursor_blink = !cursor_blink;
+                    update_cursor_status();
+                    break;
+                case '0':
+                    pressed_char('0');
+                    write_word("static        ");
+                    break;
+                case 'A':
+                    pressed_char('A');
+                    char_test();
+                    break;
+                case 'B':
+                    pressed_char('B');
+                    break;
+                case 'C':
+                    pressed_char('C');
+                    cursor_on = !cursor_on;
+                    update_cursor_status();
+                    break;
+                case 'D':
+                    pressed_char('D');
+                    clear_display();
+                    break;
+                case '*':
+                    pressed_char('*');
+                    break;
+                case '#':
+                    pressed_char('#');
+                    break;
+                case 'N':
+                    break;
+            }
 }
