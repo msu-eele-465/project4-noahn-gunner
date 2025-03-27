@@ -4,69 +4,68 @@
 #include "../src/keypad.h"
 #include "msp430fr2355.h"
 
-#define LED_BAR_ADDR 0x42     // I2C address of LED bar
-#define PATTERN_KEY '1'       // test pattern key (you can expand this later)
-
-void init_I2C_Master(void) {
-    // Set P1.2 (SDA) and P1.3 (SCL) as I2C function
-    P1SEL1 |= BIT2 | BIT3;
-    P1SEL0 &= ~(BIT2 | BIT3);
-
-    // Put eUSCI_B0 into reset
-    UCB0CTLW0 |= UCSWRST;
-
-    // Configure as I2C Master, synchronous mode, use SMCLK
-    UCB0CTLW0 = UCMST | UCMODE_3 | UCSYNC | UCSSEL__SMCLK | UCSWRST;
-
-    // Set bit rate (assuming SMCLK ~1MHz)
-    UCB0BRW = 10;  // 1 MHz / 10 = 100 kHz I2C
-
-    // Set slave address
-    UCB0I2CSA = LED_BAR_ADDR;
-
-    // Release from reset
-    UCB0CTLW0 &= ~UCSWRST;
-}
-
-
-void send_byte_I2C(unsigned char byte) {
-    while (UCB0CTLW0 & UCTXSTP); // Wait for any previous stop to complete
-    UCB0CTLW0 |= UCTR | UCTXSTT; // Set transmitter mode and start condition
-
-    while (!(UCB0IFG & UCTXIFG0)); // Wait for buffer ready
-    UCB0TXBUF = byte;             // Send byte
-
-    while (!(UCB0IFG & UCTXIFG0)); // Wait for ACK
-    UCB0CTLW0 |= UCTXSTP;          // Send stop
-    while (UCB0CTLW0 & UCTXSTP);   // Wait for stop to complete
-}
-
-// for blinking LED on keypress
+int data_Cnt = 0;
 volatile int prev_state = 0;
+bool already_sent = false;
+char packet[] = {0x03};
 
-int main(void) {
-    WDTCTL = WDTPW | WDTHOLD;               // Stop watchdog timer
+void init_I2C() {
+    //-- 1. Put eUSCI_B0 into software reset
+	UCB0CTLW0 |= UCSWRST;                   // UCSWRST=1 for eUSCI_B0 in SW reset
 
-    // Setup red LED
-    P1DIR |= BIT0;
+	//-- 2. Configure eUSCI_B0
+	UCB0CTLW0 |= UCSSEL__SMCLK;             // Choose BRCLK=SMCLK=1MHz
+	UCB0BRW = 10;                           // Divide BRCLK by 10 for SCL=100kHz
+
+	UCB0CTLW0 |= UCMODE_3;                  // Put into I2C mode
+	UCB0CTLW0 |= UCMST;                     // Put into master mode
+	UCB0CTLW0 |= UCTR;
+	UCB0I2CSA = 0x0042;                     // Slave address = 0x42 (LED Bar)
+
+	UCB0CTLW1 |= UCASTP_2;                  // Auto STOP when UCB0TBCNT reached
+	UCB0TBCNT = sizeof(packet);             // # of bytes in packet
+
+	//-- 3. Configure Ports
+	P1SEL1 &= ~BIT3;                        // P1.3 = SCL
+	P1SEL0 |= BIT3;
+
+	P1SEL1 &= ~BIT2;                        // P1.2 = SDA
+	P1SEL0 |= BIT2;
+
+	PM5CTL0 &= ~LOCKLPM5;                   // Disable Low Power Mode
+
+	//-- 4. Take eUSCI_B0 out of SW reset
+	UCB0CTLW0 &= ~UCSWRST;                  // UCSWRST = 1 for eUSCI_B0 in SW reset
+
+	//-- 5. Enable Interrupts
+	UCB0IE |= UCTXIE0;                      // Enable I2C Tx0 IRQ
+	__enable_interrupt();
+}
+
+void send_I2C_packet() {
+    UCB0IFG &= ~UCTXIFG0;                   // Clear flags
+    UCB0TXBUF = packet[0];                  // Load byte
+    UCB0CTLW0 |= UCTXSTT;                   // Start
+    while (UCB0CTLW0 & UCTXSTT);            // Wait for start to clear
+    while (!(UCB0IFG & UCSTPIFG));          // Wait for stop
+    UCB0IFG &= ~UCSTPIFG;
+}
+
+int main(void)
+{
+	WDTCTL = WDTPW | WDTHOLD;	            // stop watchdog timer
+    
+    P1DIR |= BIT0;  // Heartbeat LED
     P1OUT &= ~BIT0;
 
-    // Setup P6.6 as output for LED test
-    P6DIR |= BIT6;
-    P6OUT &= ~BIT6;  // Start off
-
+    P6DIR |= BIT6;  // Unlock status LED
+    P6OUT &= ~BIT6;
 
     init_keypad_ports();
-    init_I2C_Master();
+    init_I2C();
 
-    // Unlock GPIO pins
-    PM5CTL0 &= ~LOCKLPM5;
-
-    // Timer B0 for periodic LED blink (optional)
-    TB0CTL |= TBCLR;
-    TB0CTL |= TBSSEL__ACLK;
-    TB0CTL |= MC__CONTINUOUS;
-
+    // Optional heartbeat timer
+    TB0CTL |= TBCLR | TBSSEL__ACLK | MC__CONTINUOUS;
     TB0CTL &= ~TBIFG;
     TB0CTL |= TBIE;
 
@@ -74,22 +73,26 @@ int main(void) {
     __enable_interrupt();
 
     int i;
-    while (true) {
+
+    while (1) {
         col_masking();
         for (i = 0; i < 10000; i++) {}
 
         lock_state();
-        if (password_unlock && current_key == PATTERN_KEY && prev_key != PATTERN_KEY) {
-            send_byte_I2C(0x55);   // send dummy command to LED bar
-            P6OUT ^= BIT6;         // toggle status LED to show it sent
-        }
-        // // Turn on LED on P6.6 if unlock code is correctly entered
-        // if (locked_state == 2 && password_unlock) {
-        //     P6OUT |= BIT6;
-        // } else {
-        //     P6OUT &= ~BIT6;
-        // }
 
+        // === UNLOCK DETECTED ===
+        if (locked_state == 2 && password_unlock) {
+            P6OUT |= BIT6;
+
+            if (!already_sent) {
+                send_I2C_packet();
+                already_sent = true;
+            }
+
+        } else {
+            P6OUT &= ~BIT6;
+            already_sent = false;  // Reset if it gets re-locked
+        }
 
         for (i = 0; i < 10000; i++) {}
 
@@ -104,7 +107,7 @@ int main(void) {
     }
 }
 
-//---- Port 2 Interrupt (Column ISR)
+//--- Column Interrupt
 #pragma vector = PORT2_VECTOR
 __interrupt void ISR_Port2_Column(void) {
     col_masking();
@@ -132,16 +135,24 @@ __interrupt void ISR_Port2_Column(void) {
         current_key = 'N';
     }
 
-    // Clear column interrupt flags
     P2IFG &= ~(BIT4 | BIT5 | BIT6 | BIT7);
-
-    // Indicate keypress with LED blink
     P1OUT ^= BIT0;
 }
 
-// Timer Overflow (optional LED heartbeat or indicator)
+//--- Timer Interrupt
 #pragma vector = TIMER0_B1_VECTOR
 __interrupt void ISR_TB0_Overflow(void) {
     P1OUT ^= BIT0;
     TB0CTL &= ~TBIFG;
+}
+
+//---------------- Interrupt Service Routines ---------------------------------
+#pragma vector = EUSCI_B0_VECTOR
+__interrupt void EUSCI_B0_I2C_ISR(void){
+    UCB0TXBUF = packet[data_Cnt];          // Send the byte
+    data_Cnt++;
+
+    if (data_Cnt >= sizeof(packet)) {
+        data_Cnt = 0;                      // Reset for next transmission
+    }
 }
