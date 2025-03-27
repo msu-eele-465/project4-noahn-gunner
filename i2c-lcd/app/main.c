@@ -35,7 +35,7 @@ int main(void)
             key_input('C');
             key_input('D');
             key_input('*');
-            key_input('H');
+            key_input('#');
             
         }
     }
