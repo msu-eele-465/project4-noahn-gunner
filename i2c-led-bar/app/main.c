@@ -150,6 +150,19 @@ void selectPattern(led_pattern_t pattern) {
         case Pattern_3_In_Out:
             pattern_scale_divisor = 2;  // Half base period
             break;
+        case Pattern_4_Down:
+            pattern_scale_divisor = 4;
+            break;
+        case Pattern_5_RotateLeft:
+            pattern_scale_divisor = 3;
+            break;
+        case Pattern_6_Rotate7Right:
+            pattern_scale_divisor = 2;
+            break;
+        case Pattern_7_FillLeft:
+            pattern_scale_divisor = 1;
+            break;
+        
         default:
             pattern_scale_divisor = 1;
             break;
@@ -207,6 +220,94 @@ void updatePattern(void) {
             LED_PORT2 = Pattern_3_P2[pattern_step3];
             pattern_step3 = (pattern_step3 + 1) % 6;  // Cycle through 6 steps
             break;
+        case Pattern_4_Down: {
+            static uint8_t down_count = 255;
+
+            LED_PORT2 = 0;
+            if (down_count & (1 << 0)) LED_PORT2 |= LED1;
+            if (down_count & (1 << 1)) LED_PORT2 |= LED2;
+            if (down_count & (1 << 2)) LED_PORT2 |= LED3;
+
+            uint8_t new_leds = 0;
+            if (down_count & (1 << 3)) new_leds |= LED4;
+            if (down_count & (1 << 4)) new_leds |= LED5;
+            if (down_count & (1 << 5)) new_leds |= LED6;
+            if (down_count & (1 << 6)) new_leds |= LED7;
+            if (down_count & (1 << 7)) new_leds |= LED8;
+
+            LED_PORT1 = (LED_PORT1 & ~LED_MASK_P1) | (new_leds & LED_MASK_P1);
+            down_count--;
+            break;
+        }
+
+        case Pattern_5_RotateLeft: {
+            static uint8_t led_byte = 0x01;  // Start with rightmost LED on
+            if (led_byte == 0) led_byte = 0x01;  // Safety reset
+
+            LED_PORT2 = 0;
+            LED_PORT1 = 0;
+
+            if (led_byte & (1 << 0)) LED_PORT2 |= LED1;
+            if (led_byte & (1 << 1)) LED_PORT2 |= LED2;
+            if (led_byte & (1 << 2)) LED_PORT2 |= LED3;
+
+            uint8_t new_leds = 0;
+            if (led_byte & (1 << 3)) new_leds |= LED4;
+            if (led_byte & (1 << 4)) new_leds |= LED5;
+            if (led_byte & (1 << 5)) new_leds |= LED6;
+            if (led_byte & (1 << 6)) new_leds |= LED7;
+            if (led_byte & (1 << 7)) new_leds |= LED8;
+
+            LED_PORT1 = (LED_PORT1 & ~LED_MASK_P1) | (new_leds & LED_MASK_P1);
+            led_byte = (led_byte << 1) | (led_byte >> 7);  // Rotate left
+            break;
+        }
+
+        case Pattern_6_Rotate7Right: {
+            static uint8_t step = 0;
+            uint8_t led_byte = ~(1 << step);  // One zero rotating right in a sea of ones
+
+            LED_PORT2 = 0;
+            LED_PORT1 = 0;
+
+            if (led_byte & (1 << 0)) LED_PORT2 |= LED1;
+            if (led_byte & (1 << 1)) LED_PORT2 |= LED2;
+            if (led_byte & (1 << 2)) LED_PORT2 |= LED3;
+
+            uint8_t new_leds = 0;
+            if (led_byte & (1 << 3)) new_leds |= LED4;
+            if (led_byte & (1 << 4)) new_leds |= LED5;
+            if (led_byte & (1 << 5)) new_leds |= LED6;
+            if (led_byte & (1 << 6)) new_leds |= LED7;
+            if (led_byte & (1 << 7)) new_leds |= LED8;
+
+            LED_PORT1 = (LED_PORT1 & ~LED_MASK_P1) | (new_leds & LED_MASK_P1);
+            step = (step + 1) % 8;
+            break;
+        }
+
+        case Pattern_7_FillLeft: {
+            static uint8_t step = 0;
+            uint8_t led_byte = (1 << (step + 1)) - 1;
+
+            LED_PORT2 = 0;
+            LED_PORT1 = 0;
+
+            if (led_byte & (1 << 0)) LED_PORT2 |= LED1;
+            if (led_byte & (1 << 1)) LED_PORT2 |= LED2;
+            if (led_byte & (1 << 2)) LED_PORT2 |= LED3;
+
+            uint8_t new_leds = 0;
+            if (led_byte & (1 << 3)) new_leds |= LED4;
+            if (led_byte & (1 << 4)) new_leds |= LED5;
+            if (led_byte & (1 << 5)) new_leds |= LED6;
+            if (led_byte & (1 << 6)) new_leds |= LED7;
+            if (led_byte & (1 << 7)) new_leds |= LED8;
+
+            LED_PORT1 = (LED_PORT1 & ~LED_MASK_P1) | (new_leds & LED_MASK_P1);
+            step = (step + 1) % 8;
+            break;
+        }
 
         default:
             LED_PORT1 &= ~LED_MASK_P1;
@@ -248,7 +349,7 @@ int main(void) {
     PM5CTL0 &= ~LOCKLPM5;
     array_init();              // Initialize LEDs and timer
     setupTimer();              // Start Timer_B0 for LED patterns
-    init_heartbeat();         // Start the heartbeat LED
+    //init_heartbeat();         // Start the heartbeat LED
     i2c_init_slave();
 
     __enable_interrupt();
@@ -292,7 +393,7 @@ __interrupt void USCI_B0_ISR(void) {
             P1OUT |= BIT0;
 
             // Use recieved byte to select pattern
-            if (received <= Pattern_3_In_Out) {
+            if (received <= Pattern_7_FillLeft) {
                 selectPattern((led_pattern_t)received);
             }
             // Handle speed control
@@ -302,6 +403,11 @@ __interrupt void USCI_B0_ISR(void) {
             else if (received == 'B') {
                 increaseTimerPeriod();
             }
+            else if (received == 'D') {
+                P1OUT = 0x00;  // Turn off P1 LEDs
+                P2OUT = 0x00;  // Turn off P2 LEDs
+            }
+            
 
             break;
         }
@@ -323,8 +429,8 @@ __interrupt void USCI_B0_ISR(void) {
     }
 }
 
-// Timer_B1 CCR0 ISR
-#pragma vector = TIMER1_B0_VECTOR
-__interrupt void Timer_B1_ISR(void) {
-    P1OUT ^= BIT0;   // Toggle heartbeat LED
-}
+// // Timer_B1 CCR0 ISR
+// #pragma vector = TIMER1_B0_VECTOR
+// __interrupt void Timer_B1_ISR(void) {
+//     P1OUT ^= BIT0;   // Toggle heartbeat LED
+// }

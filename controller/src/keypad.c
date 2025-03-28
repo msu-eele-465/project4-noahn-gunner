@@ -77,6 +77,7 @@ int col_masking(void) {
 int lock_state(void) {
     if ((current_key == 'D') && (prev_key != 'D')) {
         locked_state = 0;
+        sendCommandByte(0x44);
         password_unlock = false;
         pass_inx_char = 0;
     } else if (!password_unlock) {
@@ -167,7 +168,9 @@ int button_logic() {
         locked_state = 11;
         sendCommandByte(0x42);  // Increase transition time
     }
+    else if ((current_key == 'D') && (prev_key != 'D')) {
+        sendCommandByte(0x44);
+    }
 
     return 0;
 }
-

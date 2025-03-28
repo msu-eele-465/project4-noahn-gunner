@@ -93,18 +93,14 @@ int main(void)
         lock_state();
 
         // === UNLOCK DETECTED ===
-        if (locked_state == 2 && password_unlock) {
-            P6OUT |= BIT6;
-
-            if (!already_sent) {
-                send_I2C_packet();
-                already_sent = true;
+        if (locked_state != prev_state) {
+            if (password_unlock) {
+                P6OUT |= BIT6;  // Turn on status LED when unlocked
+            } else {
+                P6OUT &= ~BIT6; // Turn off when locked or failed attempt
             }
-
-        } else {
-            P6OUT &= ~BIT6;
-            already_sent = false;  // Reset if it gets re-locked
         }
+
 
         for (i = 0; i < 10000; i++) {}
 

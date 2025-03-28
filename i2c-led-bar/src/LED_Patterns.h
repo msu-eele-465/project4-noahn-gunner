@@ -25,13 +25,26 @@
 #define ALL_LED_P2 (LED1 | LED2 | LED3)
 
 // Pattern Enum
+// typedef enum {
+//     Pattern_Off = -1,
+//     Pattern_0_Static = 0,  // Static
+//     Pattern_1_Toggle = 1,  // Toggle
+//     Pattern_2_Up = 2,      // Up Counter
+//     Pattern_3_In_Out = 3   // In & Out
+// } led_pattern_t;
+
 typedef enum {
     Pattern_Off = -1,
-    Pattern_0_Static = 0,  // Static
-    Pattern_1_Toggle = 1,  // Toggle
-    Pattern_2_Up = 2,      // Up Counter
-    Pattern_3_In_Out = 3   // In & Out
+    Pattern_0_Static = 0,
+    Pattern_1_Toggle =1,
+    Pattern_2_Up =2,
+    Pattern_3_In_Out =3,
+    Pattern_4_Down =4,
+    Pattern_5_RotateLeft =5,
+    Pattern_6_Rotate7Right =6,
+    Pattern_7_FillLeft =7
 } led_pattern_t;
+
 
 // Function Prototypes
 void setupTimer(void);
